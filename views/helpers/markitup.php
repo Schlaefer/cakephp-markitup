@@ -2,8 +2,8 @@
 class MarkitupHelper extends AppHelper {
 	public $helpers = array('Core.Html', 'Core.Form', 'Core.Javascript');
 	public $paths = array(
-		'css' => '/js/markitup/',
-		'js' => 'markitup/',
+		'css' => '/markitup/js/markitup/',
+		'js' => '/markitup/js/markitup/',
 	);
 	public $vendors = array('markdown' => 'Markitup.Markdown');
 	public function __construct() {
@@ -26,7 +26,7 @@ class MarkitupHelper extends AppHelper {
 	 * @return string  An <textarea /> element.
 	 */
 	public function editor($name, $settings = array()) {
-		$this->Javascript->link($this->paths['js'] . 'jquery.markitup', false);
+		$this->Html->script($this->paths['js'] . 'jquery.markitup', false);
 		$config = $this->_build($settings);
 		$settings = $config['settings'];
 		$default = $config['default'];
@@ -125,7 +125,7 @@ class MarkitupHelper extends AppHelper {
 			$content = $class($content);
 		}
 
-		echo $this->Html->css($this->paths['css'] . 'templates' . DS . 'preview', null, null, false);
+		echo $this->Html->css($this->paths['css'] . 'templates' . DS . 'preview', null, array('inline' => false));
 
 		return $content;
 	}
@@ -149,7 +149,7 @@ class MarkitupHelper extends AppHelper {
 		$this->Html->css(array(
 			$this->paths['css'] . 'skins' . DS . $settings['skin'] . DS . 'style',
 			$this->paths['css'] . 'sets' . DS . $settings['set'] . DS . 'style',
-		), null, null, false);
+		), null, array('inline' => false));
 
 		$this->Javascript->link($this->paths['js'] . 'sets' . DS . $settings['set'] . DS . 'set', false);
 
@@ -157,3 +157,4 @@ class MarkitupHelper extends AppHelper {
 	}
 }
 ?>
+
