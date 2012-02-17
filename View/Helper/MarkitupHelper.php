@@ -1,12 +1,19 @@
 <?php
+
+	App::uses('AppHelper', 'View/Helper');
+	App::uses('HtmlHelper', 'View/Helper');
+	App::uses('FormHelper', 'View/Helper');
+
 class MarkitupHelper extends AppHelper {
-	public $helpers = array('Core.Html', 'Core.Form', 'Core.Javascript');
+	public $helpers = array('Html', 'Form');
 	public $paths = array(
 		'css' => '/markitup/js/markitup/',
 		'js' => '/markitup/js/markitup/',
 	);
 	public $vendors = array('markdown' => 'Markitup.Markdown');
-	public function __construct() {
+	public function __construct(View $View, $settings = array()) {
+		parent::__construct($View, $settings);
+		
 		$paths = Configure::read('Markitup.paths');
 		if (empty($paths)) {
 			return;
@@ -26,15 +33,15 @@ class MarkitupHelper extends AppHelper {
 	 * @return string  An <textarea /> element.
 	 */
 	public function editor($name, $settings = array()) {
-		$this->Html->script($this->paths['js'] . 'jquery.markitup', false);
+		echo $this->Html->script($this->paths['js'] . 'jquery.markitup', false);
 		$config = $this->_build($settings);
 		$settings = $config['settings'];
 		$default = $config['default'];
 		$textarea = array_diff_key($settings, $default);
 		$textarea = array_merge($textarea, array('type' => 'textarea'));
-		$id = '#' . parent::domId($name);
+		$id = '#' . $this->Form->domId($name);
 
-		$out[] = 'jQuery.noConflict();';
+//		$out[] = 'jQuery.noConflict();';
 		$out[] = 'jQuery(function() {';
 		$out[] = '  jQuery("' . $id . '").markItUp(';
 		$out[] = '     ' . $settings['settings'] . ',';
@@ -43,8 +50,7 @@ class MarkitupHelper extends AppHelper {
 		$out[] = '     }';
 		$out[] = '  );';
 		$out[] = '});';
-
-		return $this->output($this->Form->input($name, $textarea) . $this->Javascript->codeBlock(join("\n", $out)));
+		return $this->output($this->Form->input($name, $textarea) . $this->Html->scriptBlock(join("\n", $out)));
 	}
 	/**
 	 * Link to build markItUp! on a existing textfield
@@ -151,7 +157,7 @@ class MarkitupHelper extends AppHelper {
 			$this->paths['css'] . 'sets' . DS . $settings['set'] . DS . 'style',
 		), null, array('inline' => false));
 
-		$this->Javascript->link($this->paths['js'] . 'sets' . DS . $settings['set'] . DS . 'set', false);
+		$this->Html->link($this->paths['js'] . 'sets' . DS . $settings['set'] . DS . 'set', false);
 
 		return array('settings' => $settings, 'default' => $default);
 	}
