@@ -53,7 +53,7 @@ class MarkitupHelper extends AppHelper {
 		$out[] = '     }';
 		$out[] = '  );';
 		$out[] = '});';
-		return $this->output($this->Form->input($name, $textarea) . $this->Html->scriptBlock(join("\n", $out)));
+		return $this->Form->input($name, $textarea) . $this->Html->scriptBlock(join("\n", $out));
 	}
 
 /**
