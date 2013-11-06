@@ -42,7 +42,15 @@ class MarkitupHelper extends AppHelper {
 		$default = $config['default'];
 		$textarea = array_diff_key($settings, $default);
 		$textarea = array_merge($textarea, array('type' => 'textarea'));
-		$id = '#' . $this->Form->domId($name);
+
+		$class = '';
+		if (isset($textarea['class'])) {
+			$class = $textarea['class'];
+		}
+		$markItUpInstance = uniqid('markItUp');
+		$textarea['class'] = $class . ' ' . $markItUpInstance;
+
+		$id = '.' . $markItUpInstance;
 
 		// $out[] = 'jQuery.noConflict();';
 		$out[] = 'jQuery(function() {';
