@@ -66,6 +66,35 @@
 			});
 		}
 
+		// Quick patch to keep compatibility with jQuery 1.9
+		var uaMatch = function(ua) {
+			ua = ua.toLowerCase();
+
+			var match = /(chrome)[ \/]([\w.]+)/.exec(ua) ||
+				/(webkit)[ \/]([\w.]+)/.exec(ua) ||
+				/(opera)(?:.*version|)[ \/]([\w.]+)/.exec(ua) ||
+				/(msie) ([\w.]+)/.exec(ua) ||
+				ua.indexOf("compatible") < 0 && /(mozilla)(?:.*? rv:([\w.]+)|)/.exec(ua) ||
+				[];
+
+			return {
+				browser: match[ 1 ] || "",
+				version: match[ 2 ] || "0"
+			};
+		};
+		var matched = uaMatch( navigator.userAgent );
+		var browser = {};
+
+		if (matched.browser) {
+			browser[matched.browser] = true;
+			browser.version = matched.version;
+		}
+		if (browser.chrome) {
+			browser.webkit = true;
+		} else if (browser.webkit) {
+			browser.safari = true;
+		}
+
 		return this.each(function() {
 			var $$, textarea, levels, scrollPosition, caretPosition, caretOffset,
 				clicked, hash, header, footer, previewWindow, template, iFrame, abort;
@@ -126,7 +155,7 @@
 				footer = $('<div class="markItUpFooter"></div>').insertAfter($$);
 
 				// add the resize handle after textarea
-				if (options.resizeHandle === true && $.browser.safari !== true) {
+				if (options.resizeHandle === true && browser.safari !== true) {
 					resizeHandle = $('<div class="markItUpResizeHandle"></div>')
 						.insertAfter($$)
 						.bind("mousedown.markItUp", function(e) {
@@ -173,7 +202,7 @@
 				$('li:hover > ul', ul).css('display', 'block');
 				$.each(markupSet, function() {
 					var button = this, t = '', title, li, j;
-					title = (button.key) ? (button.name||'')+' [Ctrl+'+button.key+']' : (button.name||'');
+					title = (button.key) ? (button.title||'')+' [Ctrl+'+button.key+']' : (button.title||'');
 					key   = (button.key) ? 'accesskey="'+button.key+'"' : '';
 					if (button.separator) {
 						li = $('<li class="markItUpSeparator">'+(button.separator||'')+'</li>').appendTo(ul);
@@ -185,16 +214,10 @@
 						li = $('<li class="markItUpButton markItUpButton'+t+(i)+' '+(button.className||'')+'"><a href="" '+key+' title="'+title+'">'+(button.name||'')+'</a></li>')
 						.bind("contextmenu.markItUp", function() { // prevent contextmenu on mac and allow ctrl+click
 							return false;
-						}).bind('click.markItUp', function() {
-							return false;
+						}).bind('click.markItUp', function(event) {
+                            event.preventDefault();
 						}).bind("focusin.markItUp", function(){
                             $$.focus();
-						}).bind('mouseup', function() {
-							if (button.call) {
-								eval(button.call)();
-							}
-							setTimeout(function() { markup(button) },1);
-							return false;
 						}).bind('mouseenter.markItUp', function() {
 								$('> ul', this).show();
 								$(document).one('click', function() { // close dropmenu if click outside
@@ -203,7 +226,18 @@
 								);
 						}).bind('mouseleave.markItUp', function() {
 								$('> ul', this).hide();
-						}).appendTo(ul);
+						});
+
+                        var eventToBind = (SaitoApp.request.isMobile == true && levels > 1) ? 'touchend' : 'click';
+                        li.bind(eventToBind, function(event) {
+                            if (button.call) {
+                                eval(button.call)();
+                            }
+                            setTimeout(function() { markup(button) },1);
+                            event.preventDefault();
+                        })
+
+                        li.appendTo(ul);
 						if (button.dropMenu) {
 							levels.push(i);
 							$(li).addClass('markItUpDropMenu').append(dropMenus(button.dropMenu));
@@ -294,10 +328,12 @@
 				block = openBlockWith + block + closeBlockWith;
 
 				return {	block:block, 
+							openBlockWith:openBlockWith,
 							openWith:openWith, 
 							replaceWith:replaceWith, 
 							placeHolder:placeHolder,
-							closeWith:closeWith
+							closeWith:closeWith,
+							closeBlockWith:closeBlockWith
 					};
 			}
 
@@ -337,7 +373,7 @@
 
 					string = { block:lines.join('\n')};
 					start = caretPosition;
-					len = string.block.length + (($.browser.opera) ? n-1 : 0);
+					len = string.block.length + ((browser.opera) ? n-1 : 0);
 				} else if (ctrlKey === true) {
 					string = build(selection);
 					start = caretPosition + string.openWith.length;
@@ -358,8 +394,8 @@
 				if ((selection === '' && string.replaceWith === '')) {
 					caretOffset += fixOperaBug(string.block);
 					
-					start = caretPosition + string.openWith.length;
-					len = string.block.length - string.openWith.length - string.closeWith.length;
+					start = caretPosition + string.openBlockWith.length + string.openWith.length;
+					len = string.block.length - string.openBlockWith.length - string.openWith.length - string.closeWith.length - string.closeBlockWith.length;
 
 					caretOffset = $$.val().substring(caretPosition,  $$.val().length).length;
 					caretOffset -= fixOperaBug($$.val().substring(0, caretPosition));
@@ -394,14 +430,14 @@
 
 			// Substract linefeed in Opera
 			function fixOperaBug(string) {
-				if ($.browser.opera) {
+				if (browser.opera) {
 					return string.length - string.replace(/\n*/g, '').length;
 				}
 				return 0;
 			}
 			// Substract linefeed in IE
 			function fixIeBug(string) {
-				if ($.browser.msie) {
+				if (browser.msie) {
 					return string.length - string.replace(/\r*/g, '').length;
 				}
 				return 0;
@@ -421,7 +457,7 @@
 			function set(start, len) {
 				if (textarea.createTextRange){
 					// quick fix to make it work on Opera 9.5
-					if ($.browser.opera && $.browser.version >= 9.5 && len == 0) {
+					if (browser.opera && browser.version >= 9.5 && len == 0) {
 						return false;
 					}
 					range = textarea.createTextRange();
@@ -443,7 +479,7 @@
 				scrollPosition = textarea.scrollTop;
 				if (document.selection) {
 					selection = document.selection.createRange().text;
-					if ($.browser.msie) { // ie
+					if (browser.msie) { // ie
 						var range = document.selection.createRange(), rangeCopy = range.duplicate();
 						rangeCopy.moveToElementText(textarea);
 						caretPosition = -1;
@@ -585,8 +621,8 @@
 						}
 					}
 					if (e.keyCode === 9) { // Tab key
-						if (shiftKey == true || ctrlKey == true || altKey == true) {
-							return true;
+						if (ctrlKey == true || altKey == true) {
+							return false;
 						}
 						if (caretOffset !== -1) {
 							get();
